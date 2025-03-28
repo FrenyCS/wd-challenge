@@ -1,3 +1,5 @@
+[![Python application test with GitHub Actions](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml/badge.svg)](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml)
+
 ## Microservice for Property Alert Notifications
 
 This is a small Python-based microservice that sends property alert notifications by email and SMS, based on user preferences. It supports scheduling, user preference management, and basic API key authentication.
