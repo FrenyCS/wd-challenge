@@ -1,6 +1,11 @@
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from pydantic import EmailStr
 from typing import Optional
+
+# Load .env.example first, then override with .env if exists
+load_dotenv(dotenv_path=".env.example", override=False)
+load_dotenv(dotenv_path=".env", override=True)
 
 
 class Settings(BaseSettings):
@@ -25,8 +30,14 @@ class Settings(BaseSettings):
     celery_broker_url: str
     celery_result_backend: Optional[str] = None
 
+    # Database
+    db_host: str
+    db_port: int
+    db_user: str
+    db_password: str
+    db_name: str
+
     class Config:
-        env_file = ".env"
         env_file_encoding = "utf-8"
 
 

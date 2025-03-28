@@ -1,7 +1,3 @@
-from dotenv import load_dotenv
-
-load_dotenv(".env.example")
-load_dotenv(".env", override=True)
 
 from celery import Celery
 from app.config import settings
