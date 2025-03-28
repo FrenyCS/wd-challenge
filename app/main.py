@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-import uvicorn
 
 from app.routes import alerts
 from app.utils.logger import setup_logger
@@ -19,7 +18,6 @@ def health_check():
         "environment": settings.environment,
         "app_name": settings.app_name,
         "version": settings.version,
-        "description": settings.app_description,
     }
 
 

@@ -6,7 +6,6 @@ from typing import Optional
 class Settings(BaseSettings):
     # General
     app_name: str = "Property Alerts Service"
-    app_description: str = "Property Alerts Service"
     environment: str = "development"
     version: str = "1.0.0"
 
