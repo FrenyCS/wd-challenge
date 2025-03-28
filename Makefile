@@ -2,9 +2,9 @@ install:
 	python -m pip install --upgrade pip &&\
 		pip install -r requirements.txt
 format:
-	black ./**/*.py app/*.py tests/*.py
+	black app tests
 lint:
-	pylint --disable=R,C app/*.py tests/*.py
+	pylint --disable=R,C -v app/*.py app/**/*.py tests/*.py tests/**/*.py
 test:
 	#python -m pytest -vv --cov=app tests/*.py
 build:
