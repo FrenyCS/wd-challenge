@@ -93,6 +93,22 @@ Manage delivery preferences per user (email and/or SMS).
 	  "sms_enabled": false
 	}
 
+### How to Run in Codespaces
+
+**Step 1. Build and run the app**  
+
+Run ```docker-compose up --build``` in the terminal, this will:
+- Start the FastAPI service at http://localhost:8000
+- Start Redis (used as a message broker for background tasks)
+
+**Step 2. Port forwarding in Codespaces**  
+
+Port 8000 is already auto-forwarded via `.devcontainer/devcontainer.json`, just wait a few seconds (while the application startup is completed) and click “Open in Browser” when prompted.
+
+**Step 3. Change the application port**
+Codespaces is trying to use the redis port (something we can improve later) so you'll see an error, just *change the port value from 6379 to **8000*** in the openend url which has the pattern 
+`https://<codespace-nickname>-<unique-hash-id>-<port>.app.github.dev/`
+
 ### Testing
 - Unit tests cover key logic.
 - Mock integration tests simulate sending notifications.

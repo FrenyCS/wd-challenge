@@ -26,8 +26,3 @@ def health_check():
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-
-if __name__ == "__main__":
-    # TODO: Add logging
-    uvicorn.run(app, port=8080, host="0.0.0.0")
