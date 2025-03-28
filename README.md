@@ -116,3 +116,12 @@ Codespaces is trying to use the redis port (something we can improve later) so y
 - Mock integration tests simulate sending notifications.
 
 Instructions for running tests and setup are in the /tests folder.
+
+
+### Environment Variables
+
+A `.env.example` file is included with mock/stub values that are safe to version and use for testing or evaluation purposes.
+
+If you need to use real credentials (e.g. for local SMTP or Twilio), you can create your own `.env` file in the root of the project. It will automatically be loaded and will override the default values in `.env.example`.
+
+**Note:** The `.env` file is ignored by Git and should not be committed to version control.

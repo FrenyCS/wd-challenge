@@ -5,6 +5,8 @@ python-dotenv
 fastapi
 uvicorn
 celery[redis]
+sqlalchemy>=2.0
+asyncpg
 
 pydantic
 pydantic-settings

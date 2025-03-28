@@ -11,6 +11,7 @@ services:
       - .env
     depends_on:
       - redis
+      - db
 
   redis:
     image: redis:7
@@ -19,3 +20,19 @@ services:
       - "6379:6379"
     sysctls:
       - net.core.somaxconn=1024
+
+  db:
+    image: postgres:15
+    container_name: alerts_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: alerts_user
+      POSTGRES_PASSWORD: alerts_pass
+      POSTGRES_DB: alerts_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
