@@ -1,6 +1,14 @@
 black
-fastapi
 pylint
+python-dotenv
+
+fastapi
+uvicorn
+celery[redis]
+
+pydantic
+pydantic-settings
+email-validator
+
 pytest
 pytest-cov
-uvicorn

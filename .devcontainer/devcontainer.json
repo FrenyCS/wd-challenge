@@ -1,0 +1,16 @@
+{
+    "name": "Property Alerts Microservice",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/app",
+    "forwardPorts": [8000],
+    "postCreateCommand": "docker-compose up --build -d",
+    "remoteUser": "vscode",
+    "customizations": {
+      "vscode": {
+        "settings": {
+          "terminal.integrated.defaultProfile.linux": "bash"
+        }
+      }
+    }
+}
