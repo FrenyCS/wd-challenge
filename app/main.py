@@ -1,11 +1,27 @@
+import asyncio
+
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
 from app.routes import alerts
 from app.utils.logger import setup_logger
 from app.config import settings
+from app.db import engine
+from app.models import Base
 
 
-app = FastAPI(title=settings.app_name, version=settings.version)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print("Tables created")
+
+    yield  # allows the app to start serving
+
+    # Shutdown: (optional) do cleanup here if needed
+
+app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
 setup_logger()
 app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
