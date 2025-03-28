@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from app.routes import alerts
+from app.routes import preferences
 from app.utils.logger import setup_logger
 from app.config import settings
 from app.db import engine
@@ -21,10 +22,12 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: (optional) do cleanup here if needed
 
+
 app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
 setup_logger()
 app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
+app.include_router(preferences.router, prefix="/preferences", tags=["Preferences"])
 
 
 @app.get("/health", tags=["Health"])
@@ -39,4 +42,5 @@ def health_check():
 
 @app.get("/")
 async def root():
+    # replace this with usage instructions
     return {"message": "Hello World"}

@@ -1,4 +1,3 @@
-# app/routes/alerts.py
 from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional

@@ -1,14 +1,25 @@
 # app/models.py
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Text
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Enum,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from enum import Enum as PyEnum
 from app.db import Base
 
+
 class NotificationStatus(PyEnum):
     pending = "pending"
     sent = "sent"
     failed = "failed"
+
 
 class UserPreference(Base):
     __tablename__ = "user_preferences"
@@ -19,6 +30,7 @@ class UserPreference(Base):
     sms_enabled = Column(Boolean, default=True)
 
     notifications = relationship("Notification", back_populates="user")
+
 
 class Notification(Base):
     __tablename__ = "notifications"
