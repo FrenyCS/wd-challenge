@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from app.routes import alerts
 from app.routes import preferences
+from app.routes import notifications
 from app.utils.logger import setup_logger
 from app.config import settings
 from app.db import engine
@@ -28,6 +29,7 @@ app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 setup_logger()
 app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
 app.include_router(preferences.router, prefix="/preferences", tags=["Preferences"])
+app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 
 
 @app.get("/health", tags=["Health"])
