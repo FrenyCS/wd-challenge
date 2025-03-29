@@ -3,8 +3,8 @@ nest_asyncio.apply()
 
 from celery import shared_task
 from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.exc import SQLAlchemyError
 import asyncio
 from app.db import AsyncSessionLocal
 from app.models import Notification, NotificationStatus
@@ -49,7 +49,11 @@ async def process_notification(notification_id, user_id, subject, message, chann
             notification.status = NotificationStatus.sent
             notification.sent_at = datetime.now(timezone.utc)
             await session.commit()
-        except Exception as e:
-            print(f"[ERROR] Failed to send {channel.upper()} notification: {e}")
+        except SQLAlchemyError as e:
+            print(f"[ERROR] Database error while sending {channel.upper()} notification: {e}")
+            notification.status = NotificationStatus.failed
+            await session.commit()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            print(f"[ERROR] Unexpected error while sending {channel.upper()} notification: {e}")
             notification.status = NotificationStatus.failed
             await session.commit()

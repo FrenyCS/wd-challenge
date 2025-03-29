@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
@@ -13,7 +11,7 @@ from app.models import Base
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name,unused-argument
     # Startup: create tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

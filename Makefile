@@ -4,7 +4,7 @@ install:
 format:
 	black app tests
 lint:
-	#pylint --disable=R,C -v app/*.py app/**/*.py tests/*.py tests/**/*.py
+	pylint --disable=R,C -v app/*.py app/**/*.py tests/*.py tests/**/*.py
 test:
 	#python -m pytest -vv --cov=app tests/*.py
 build:
