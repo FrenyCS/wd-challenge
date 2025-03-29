@@ -1,60 +1,55 @@
+import nest_asyncio
+nest_asyncio.apply()
+
 from celery import shared_task
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import asyncio
-
-from app.models import Notification, NotificationStatus
 from app.db import AsyncSessionLocal
+from app.models import Notification, NotificationStatus
 
-# Mock email/SMS notification logic
+
 def mock_send_email(subject: str, body: str, user_id: str):
-    print(f"[MOCK EMAIL] To: {user_id}\nSubject: {subject}\nBody: {body}")
+    print(f"[MOCK EMAIL] To: {user_id} | Subject: {subject} | Body: {body}")
     return True
 
 def mock_send_sms(message: str, user_id: str):
-    print(f"[MOCK SMS] To: {user_id}\nMessage: {message}")
+    print(f"[MOCK SMS] To: {user_id} | Message: {message}")
     return True
+
 
 @shared_task(name="app.tasks.send_email_task")
 def send_email_task(user_id: str, subject: str, message: str, notification_id: int):
-    asyncio.run(_process_notification_task(
-        notification_id=notification_id,
-        user_id=user_id,
-        subject=subject,
-        message=message,
-        channel="email"
-    ))
+    asyncio.run(process_notification(notification_id, user_id, subject, message, "email"))
 
 @shared_task(name="app.tasks.send_sms_task")
 def send_sms_task(user_id: str, subject: str, message: str, notification_id: int):
-    asyncio.run(_process_notification_task(
-        notification_id=notification_id,
-        user_id=user_id,
-        subject=subject,
-        message=message,
-        channel="sms"
-    ))
+    asyncio.run(process_notification(notification_id, user_id, subject, message, "sms"))
 
-async def _process_notification_task(notification_id: int, user_id: str, subject: str, message: str, channel: str):
+
+async def process_notification(notification_id, user_id, subject, message, channel):
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(Notification).where(Notification.id == notification_id))
-        notification = result.scalar_one_or_none()
-
-        if not notification:
-            print(f"[ERROR] Notification ID {notification_id} not found")
-            return
-
         try:
+            result = await session.execute(
+                select(Notification).where(Notification.id == notification_id)
+            )
+            notification = result.scalar_one_or_none()
+            if not notification:
+                print(f"[ERROR] Notification {notification_id} not found")
+                return
+
+            # Simulate sending
             if channel == "email":
                 mock_send_email(subject, message, user_id)
-            elif channel == "sms":
+            else:
                 mock_send_sms(message, user_id)
 
+            # Update status and sent_at
             notification.status = NotificationStatus.sent
             notification.sent_at = datetime.now(timezone.utc)
+            await session.commit()
         except Exception as e:
             print(f"[ERROR] Failed to send {channel.upper()} notification: {e}")
             notification.status = NotificationStatus.failed
-
-        await session.commit()
+            await session.commit()

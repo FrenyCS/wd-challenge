@@ -7,6 +7,7 @@ uvicorn
 celery[redis]
 sqlalchemy>=2.0
 asyncpg
+nest_asyncio
 
 pydantic
 pydantic-settings

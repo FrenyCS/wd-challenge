@@ -13,6 +13,19 @@ services:
       - redis
       - db
 
+  celery:
+    build: .
+    container_name: celery_worker
+    # working_dir: /app       # 👈 this is crucial
+    command: celery -A app.celery_worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
   redis:
     image: redis:7
     container_name: redis

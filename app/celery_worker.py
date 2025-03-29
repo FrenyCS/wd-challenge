@@ -9,3 +9,6 @@ celery_app = Celery(
 )
 
 celery_app.conf.task_routes = {"app.tasks.*": {"queue": "alerts"}}
+
+# Force task discovery
+import app.tasks.notification_tasks
