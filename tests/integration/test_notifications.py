@@ -28,7 +28,9 @@ def session_factory():
     return async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
-async def test_create_immediate_notification(async_client, session_factory):
+async def test_create_immediate_notification(
+    async_client, session_factory
+):  # pylint: disable=redefined-outer-name
     async with session_factory() as session:
         user_id = "notify-user-db"
 
@@ -55,11 +57,13 @@ async def test_create_immediate_notification(async_client, session_factory):
 
         # Create session using the fixture (correct loop)
         async with session_factory() as session:
-            notifications = await wait_for_notification_records(session, user_id)
+            await wait_for_notification_records(session, user_id)
 
 
 @pytest.mark.asyncio
-async def test_schedule_notification(async_client, session_factory):
+async def test_schedule_notification(
+    async_client, session_factory
+):  # pylint: disable=redefined-outer-name
     user_id = "scheduled-user"
 
     pref_payload = {
