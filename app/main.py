@@ -11,7 +11,9 @@ from app.models import Base
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name,unused-argument
+async def lifespan(
+    app: FastAPI,
+):  # pylint: disable=redefined-outer-name,unused-argument
     # Startup: create tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -27,7 +29,9 @@ app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 setup_logger()
 app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
 app.include_router(preferences.router, prefix="/preferences", tags=["Preferences"])
-app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+app.include_router(
+    notifications.router, prefix="/notifications", tags=["Notifications"]
+)
 
 
 @app.get("/health", tags=["Health"])

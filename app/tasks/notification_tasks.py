@@ -1,4 +1,5 @@
 import nest_asyncio
+
 nest_asyncio.apply()
 
 from celery import shared_task
@@ -10,25 +11,45 @@ from app.db import AsyncSessionLocal
 from app.models import Notification, NotificationStatus
 
 
-def mock_send_email(subject: str, body: str, user_id: str):
-    print(f"[MOCK EMAIL] To: {user_id} | Subject: {subject} | Body: {body}")
+def mock_send_email(user_id: str, email: str, subject: str, body: str):
+    print(
+        f"[MOCK EMAIL] To: {user_id} | Email: {email} | Subject: {subject} | Body: {body}"
+    )
     return True
 
-def mock_send_sms(message: str, user_id: str):
-    print(f"[MOCK SMS] To: {user_id} | Message: {message}")
+
+def mock_send_sms(user_id: str, phone_number: str, message: str):
+    print(
+        f"[MOCK SMS] To: {user_id} | Phone number: {phone_number} | Message: {message}"
+    )
     return True
 
 
 @shared_task(name="app.tasks.send_email_task")
-def send_email_task(user_id: str, subject: str, message: str, notification_id: int):
-    asyncio.run(process_notification(notification_id, user_id, subject, message, "email"))
+def send_email_task(
+    user_id: str, subject: str, message: str, recipient: str, notification_id: int
+):
+    asyncio.run(
+        process_notification(
+            notification_id, user_id, subject, message, "email", recipient
+        )
+    )
+
 
 @shared_task(name="app.tasks.send_sms_task")
-def send_sms_task(user_id: str, subject: str, message: str, notification_id: int):
-    asyncio.run(process_notification(notification_id, user_id, subject, message, "sms"))
+def send_sms_task(
+    user_id: str, subject: str, message: str, recipient: str, notification_id: int
+):
+    asyncio.run(
+        process_notification(
+            notification_id, user_id, subject, message, "sms", recipient
+        )
+    )
 
 
-async def process_notification(notification_id, user_id, subject, message, channel):
+async def process_notification(
+    notification_id, user_id, subject, message, channel, recipient
+):
     async with AsyncSessionLocal() as session:
         try:
             result = await session.execute(
@@ -41,19 +62,27 @@ async def process_notification(notification_id, user_id, subject, message, chann
 
             # Simulate sending
             if channel == "email":
-                mock_send_email(subject, message, user_id)
+                mock_send_email(
+                    user_id=user_id, email=recipient, subject=subject, body=message
+                )
             else:
-                mock_send_sms(message, user_id)
+                # For SMS, we can format the message to include the subject
+                message = f"{subject} - {message}"
+                mock_send_sms(user_id=user_id, phone_number=recipient, message=message)
 
             # Update status and sent_at
             notification.status = NotificationStatus.sent
             notification.sent_at = datetime.now(timezone.utc)
             await session.commit()
         except SQLAlchemyError as e:
-            print(f"[ERROR] Database error while sending {channel.upper()} notification: {e}")
+            print(
+                f"[ERROR] Database error while sending {channel.upper()} notification: {e}"
+            )
             notification.status = NotificationStatus.failed
             await session.commit()
         except Exception as e:  # pylint: disable=broad-exception-caught
-            print(f"[ERROR] Unexpected error while sending {channel.upper()} notification: {e}")
+            print(
+                f"[ERROR] Unexpected error while sending {channel.upper()} notification: {e}"
+            )
             notification.status = NotificationStatus.failed
             await session.commit()

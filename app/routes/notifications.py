@@ -11,16 +11,22 @@ from app.tasks.notification_tasks import send_email_task, send_sms_task
 
 router = APIRouter()
 
+
 class NotificationPayload(BaseModel):
     user_id: str
     subject: str
     message: str
     send_at: Optional[datetime] = None  # if None, send immediately
 
-@router.post("/")
-async def create_notification(payload: NotificationPayload, db: AsyncSession = Depends(get_db)):
+
+@router.post("")
+async def create_notification(
+    payload: NotificationPayload, db: AsyncSession = Depends(get_db)
+):
     # Get user preferences
-    result = await db.execute(select(UserPreference).where(UserPreference.user_id == payload.user_id))
+    result = await db.execute(
+        select(UserPreference).where(UserPreference.user_id == payload.user_id)
+    )
     preferences = result.scalar_one_or_none()
     if not preferences:
         raise HTTPException(status_code=404, detail="User preferences not found")
@@ -31,7 +37,7 @@ async def create_notification(payload: NotificationPayload, db: AsyncSession = D
     notification_records = []
 
     # Schedule email if enabled
-    if preferences.email_enabled:
+    if preferences.email_enabled and preferences.email:
         notification = Notification(
             user_id=payload.user_id,
             subject=payload.subject,
@@ -39,12 +45,13 @@ async def create_notification(payload: NotificationPayload, db: AsyncSession = D
             send_at=send_at,
             status=NotificationStatus.pending,
             channel="email",
+            recipient=preferences.email,
         )
         db.add(notification)
         notification_records.append((notification, send_email_task))
 
     # Schedule SMS if enabled
-    if preferences.sms_enabled:
+    if preferences.sms_enabled and preferences.phone_number:
         notification = Notification(
             user_id=payload.user_id,
             subject=payload.subject,
@@ -52,6 +59,7 @@ async def create_notification(payload: NotificationPayload, db: AsyncSession = D
             send_at=send_at,
             status=NotificationStatus.pending,
             channel="sms",
+            recipient=preferences.phone_number,
         )
         db.add(notification)
         notification_records.append((notification, send_sms_task))
@@ -65,6 +73,7 @@ async def create_notification(payload: NotificationPayload, db: AsyncSession = D
             "subject": notification.subject,
             "message": notification.message,
             "notification_id": notification.id,
+            "recipient": notification.recipient,
         }
 
         eta = notification.send_at if notification.send_at > now else None
