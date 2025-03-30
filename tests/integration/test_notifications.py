@@ -3,6 +3,7 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.future import select
 from app.models import Notification, NotificationStatus
+from datetime import datetime, timedelta, timezone
 
 
 async def wait_for_notification_records(session, user_id, expected_count=2, timeout=3):
@@ -51,3 +52,43 @@ async def test_create_immediate_notification(async_client, session_factory):
         # Create session using the fixture (correct loop)
         async with session_factory() as session:
             notifications = await wait_for_notification_records(session, user_id)
+
+@pytest.mark.asyncio
+async def test_schedule_notification(async_client, session_factory):
+    user_id = "scheduled-user"
+
+    pref_payload = {
+        "email_enabled": True,
+        "sms_enabled": True,
+        "email": "scheduled@example.com",
+        "phone_number": "+1234567899"
+    }
+
+    response = await async_client.post(f"/preferences/{user_id}", json=pref_payload)
+    assert response.status_code == 200
+
+    # Schedule notification 10 minutes in the future
+    future_time = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+
+    notif_payload = {
+        "user_id": user_id,
+        "subject": "Scheduled Alert",
+        "message": "This will be sent later",
+        "send_at": future_time
+    }
+
+    response = await async_client.post("/notifications", json=notif_payload)
+    assert response.status_code == 200
+    assert response.json()["status"] == "queued"
+
+    async with session_factory() as session:
+        result = await session.execute(
+            select(Notification).where(Notification.user_id == user_id)
+        )
+        notifications = result.scalars().all()
+        assert len(notifications) == 2  # email + sms
+
+        for n in notifications:
+            assert n.send_at is not None
+            assert n.sent_at is None
+            assert n.status == NotificationStatus.pending
