@@ -13,6 +13,19 @@ services:
       - redis
       - db
 
+  test-runner:
+    build: .
+    container_name: test_runner
+    command: pytest tests/integration
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - celery
+
   celery:
     build: .
     container_name: celery_worker
