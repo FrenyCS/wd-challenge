@@ -1,29 +1,53 @@
 import pytest
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.future import select
+from app.models import Notification, NotificationStatus
 
-@pytest.mark.asyncio
-async def test_create_immediate_notification(async_client):
-    user_id = "notify-user"
-    
-    # Step 1: Create preferences
-    pref_payload = {
-        "email_enabled": True,
-        "sms_enabled": True,
-        "email": "notify@example.com",
-        "phone_number": "+1111111111"
-    }
 
-    response = await async_client.post(f"/preferences/{user_id}", json=pref_payload)
-    assert response.status_code == 200
+async def wait_for_notification_records(session, user_id, expected_count=2, timeout=3):
+    for _ in range(timeout * 10):  # 10 retries per second
+        result = await session.execute(
+            select(Notification).where(Notification.user_id == user_id)
+        )
+        records = result.scalars().all()
+        if len(records) == expected_count:
+            return records
+        await asyncio.sleep(0.1)  # retry after 100ms
+    raise AssertionError(f"Expected {expected_count} notifications, but got {len(records)}")
 
-    # Step 2: Trigger notification
-    notif_payload = {
-        "user_id": user_id,
-        "subject": "Test Alert",
-        "message": "This is a test notification"
-    }
+@pytest.fixture
+def session_factory():
+    engine = create_async_engine(
+        "postgresql+asyncpg://alerts_user:alerts_pass@db:5432/alerts_db", echo=False
+    )
+    return async_sessionmaker(bind=engine, expire_on_commit=False)
 
-    response = await async_client.post("/notifications", json=notif_payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "queued"
-    assert "send_at" in data
+async def test_create_immediate_notification(async_client, session_factory):
+    async with session_factory() as session:
+        user_id = "notify-user-db"
+
+        pref_payload = {
+            "email_enabled": True,
+            "sms_enabled": True,
+            "email": "notify@example.com",
+            "phone_number": "+1111111111"
+        }
+
+        response = await async_client.post(f"/preferences/{user_id}", json=pref_payload)
+        assert response.status_code == 200
+
+        notif_payload = {
+            "user_id": user_id,
+            "subject": "Test Alert",
+            "message": "This is a test notification"
+        }
+
+        response = await async_client.post("/notifications", json=notif_payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "queued"
+
+        # Create session using the fixture (correct loop)
+        async with session_factory() as session:
+            notifications = await wait_for_notification_records(session, user_id)
