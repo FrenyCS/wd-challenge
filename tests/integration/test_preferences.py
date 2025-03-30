@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_create_and_get_preferences(async_client):
     user_id = "integration-user"
@@ -7,7 +8,7 @@ async def test_create_and_get_preferences(async_client):
         "email_enabled": True,
         "sms_enabled": False,
         "email": "real@example.com",
-        "phone_number": "+9999999999"
+        "phone_number": "+9999999999",
     }
 
     # Create

@@ -15,7 +15,10 @@ async def wait_for_notification_records(session, user_id, expected_count=2, time
         if len(records) == expected_count:
             return records
         await asyncio.sleep(0.1)  # retry after 100ms
-    raise AssertionError(f"Expected {expected_count} notifications, but got {len(records)}")
+    raise AssertionError(
+        f"Expected {expected_count} notifications, but got {len(records)}"
+    )
+
 
 @pytest.fixture
 def session_factory():
@@ -23,6 +26,7 @@ def session_factory():
         "postgresql+asyncpg://alerts_user:alerts_pass@db:5432/alerts_db", echo=False
     )
     return async_sessionmaker(bind=engine, expire_on_commit=False)
+
 
 async def test_create_immediate_notification(async_client, session_factory):
     async with session_factory() as session:
@@ -32,7 +36,7 @@ async def test_create_immediate_notification(async_client, session_factory):
             "email_enabled": True,
             "sms_enabled": True,
             "email": "notify@example.com",
-            "phone_number": "+1111111111"
+            "phone_number": "+1111111111",
         }
 
         response = await async_client.post(f"/preferences/{user_id}", json=pref_payload)
@@ -41,7 +45,7 @@ async def test_create_immediate_notification(async_client, session_factory):
         notif_payload = {
             "user_id": user_id,
             "subject": "Test Alert",
-            "message": "This is a test notification"
+            "message": "This is a test notification",
         }
 
         response = await async_client.post("/notifications", json=notif_payload)
@@ -53,6 +57,7 @@ async def test_create_immediate_notification(async_client, session_factory):
         async with session_factory() as session:
             notifications = await wait_for_notification_records(session, user_id)
 
+
 @pytest.mark.asyncio
 async def test_schedule_notification(async_client, session_factory):
     user_id = "scheduled-user"
@@ -61,7 +66,7 @@ async def test_schedule_notification(async_client, session_factory):
         "email_enabled": True,
         "sms_enabled": True,
         "email": "scheduled@example.com",
-        "phone_number": "+1234567899"
+        "phone_number": "+1234567899",
     }
 
     response = await async_client.post(f"/preferences/{user_id}", json=pref_payload)
@@ -74,7 +79,7 @@ async def test_schedule_notification(async_client, session_factory):
         "user_id": user_id,
         "subject": "Scheduled Alert",
         "message": "This will be sent later",
-        "send_at": future_time
+        "send_at": future_time,
     }
 
     response = await async_client.post("/notifications", json=notif_payload)
