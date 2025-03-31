@@ -1,11 +1,30 @@
 [![Python application test with GitHub Actions](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml/badge.svg)](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml)
 
-## Microservice for Property Alert Notifications
+## Introduction
 
-A Python microservice for sending property alert notifications via **email** and **SMS**, based on user preferences. Supports immediate and scheduled delivery, user preference management, and basic API key authentication.
+This project is a Python-based microservice for sending property alert notifications via email and SMS, based on user preferences. It was developed as part of a technical challenge for a company in the real estate sector.
 
+Key features include:
+- **Notification System**: Support for email and SMS notifications.
+- **API Development**: Endpoints for scheduling notifications and managing user preferences.
+- **Task Queue**: A queuing mechanism for handling scheduled tasks.
+- **Testing**: Unit tests for core logic and mock integration tests for the system.
 
-### Architectural Approach
+The full challenge description can be found in the [challenge.md](./challenge.md) file.
+
+---
+
+## Challenge Context
+
+The goal of this challenge was to design and implement a simple yet functional prototype with the following requirements:
+- Build a notification system for email and SMS.
+- Develop APIs for scheduling notifications and managing user preferences.
+- Use a task queue for handling scheduled tasks.
+- Provide unit and integration tests.
+
+---
+
+## Architecture
 
 The service follows a layered architecture with some ideas from hexagonal architecture. The goal is to keep things simple but still clean and testable.
 
@@ -41,24 +60,35 @@ graph TD
 - PostgreSQL stores user preferences and notifications.
 - Celery workers fetch due notifications and dispatch them via the appropriate channel.
 - The `/notifications` endpoint receives the message content and scheduling time directly in the request.
-- The service does not fetch property data — this must be provided in the request.
-- If no `send_time` is included, the notification is sent immediately.
-- User Preferences are stored via `/preferences/{user_id}` and include channel opt-ins (email, SMS).
+- **Integration with External Systems**: This microservice does not pull data from external property management systems or user databases. Instead, it relies on clients (internal systems) to provide all necessary data via API calls. This approach ensures the microservice remains highly decoupled and self-contained.
+- **Architectural Quantum**: The microservice has all the resources it needs, including its own database, task queue, and notification logic. This independence aligns with microservice principles, making it easier to scale, maintain, and deploy without dependencies on other systems.
 
+---
+
+## Technology Choices and Justification
+
+The following technologies were chosen for their suitability to the project's requirements:
+
+- **FastAPI**: Chosen for its high performance and ease of use. Its built-in support for asynchronous programming and automatic API documentation made it ideal for quickly building a robust and testable API for this microservice.
+- **PostgreSQL**: Selected for its reliability and ACID compliance, ensuring consistent storage of user preferences and notification schedules. Its scalability and support for relational data make it a perfect fit for structured data needs.
+- **Redis**: Used as a message broker for its low-latency operations and seamless integration with Celery. Redis ensures efficient task queuing, which is critical for handling scheduled notifications in real-time.
+- **Celery**: Chosen for its ability to handle asynchronous task execution. It enables the microservice to process notifications independently of API requests, ensuring scalability and responsiveness.
+
+This stack was selected to ensure the microservice is performant, scalable, and aligned with the challenge's requirements.
+
+---
+
+## API Documentation
 
 ### Authentication
 
-The service uses API key authentication for internal use. Clients must include a header like: `x-api-key: your-api-key`
-
+The service uses API key authentication for internal use. Clients must include a header like: `x-api-key: your-api-key`.
 
 ### Notifications API
 
 Handles sending notifications to users.
 
-	POST /notifications
-	x-api-key: your-api-key
-	Content-Type: application/json
-
+#### POST /notifications
 ```json
 {
   "user_id": "12345",
@@ -67,20 +97,18 @@ Handles sending notifications to users.
   "body": "Here are some new listings that match your preferences..."
 }
 ```
-
 - *send_at*: optional. If omitted, sends immediately.
--	*subject*: required for email; ignored for SMS.
--	*message*: required content.
+- *subject*: required title.
+- *message*: required content.
 
 ### User Preferences API
 
 Manage delivery preferences per user (email and/or SMS).
 
-	GET /preferences/{user_id}
-	Returns current delivery preferences.
-	
-	POST /preferences/{user_id}
+#### GET /preferences/{user_id}
+Returns current delivery preferences.
 
+#### POST /preferences/{user_id}
 ```json
 {
   "email_enabled": true,
@@ -88,54 +116,61 @@ Manage delivery preferences per user (email and/or SMS).
   "email": "user@example.com",
   "phone_number": "+1234567890"
 }
-``` 
+```
 
-### Runnin in Codespaces
+---
+
+## Setup and Usage
+
+### Running in Codespaces
 
 **1. Start services**
-
 ```bash
 docker-compose up --build
-``` 
+```
+- FastAPI will run on `http://localhost:8000`.
+- Redis, Postgres, and Celery workers will also start.  
 
-- FastAPI will run on `http://localhost:8000`
-- Redis, Postgres, and Celery workers will also start.
 **Note:** If you encounter any errors, try running the `docker-compose up --build` command again. Occasionally, a race-condition error may occur on the first attempt. This is a known issue that could be addressed in future improvements.
 
 
-**2. Accesing the app**  
-
-If redirected to a Redis port (6379), just edit the browser URL to use the 8000 port:
-`https://<your-codespace>-8000.app.github.dev/`
+**2. Accessing the app**
+If redirected to a Redis port (6379), edit the browser URL to use the 8000 port:
+`https://<your-codespace>-8000.app.github.dev/`.
 
 ### Interactive API Docs
 
-FastAPI automatically generates interactive API docs, in Codespaces, access it via:
-`https://<your-codespace>-8000.app.github.dev/docs`. This provides a live interface to test and explore all endpoints, including `/notifications` and `/preferences/{user_id}`.
+FastAPI automatically generates interactive API docs. Access it via:
+`https://<your-codespace>-8000.app.github.dev/docs`.
 
-**Note:** Remember to click on the "Authorize" button at the top-right corner of the interactive API docs page to add the `x-api-key` value from the `.env.example` file before trying out any endpoint.
+**Note:** Click on the "Authorize" button at the top-right corner of the interactive API docs page to add the `x-api-key` value from the `.env.example` file before trying out any endpoint.
 
+---
 
-### Testing
+## Testing
+
 Tests are grouped into two main categories:
-- `tests/unit/`: fast unit tests for pure business logic, using mocked dependencies.
-- `tests/integration/`: full-stack tests using the real PostgreSQL, Redis, and Celery services.
+- **Unit Tests**: Fast tests for pure business logic, using mocked dependencies.
+- **Integration Tests**: Full-stack tests using the real PostgreSQL, Redis, and Celery services.
+
+### Running Tests
 
 **Unit Tests**
-
-Unit tests run automatically on every push via [GitHub Actions](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml), ensuring core logic remains reliable.
+Unit tests run automatically on every push via [GitHub Actions](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml).
 
 **Integration Tests**
-
-Integration (regression) tests are executed automatically when running the system with Docker Compose.
-After running: `docker-compose up --build` you'll see test results from the test-runner service in the logs, for example:
+Integration tests are executed automatically when running the system with Docker Compose. After running:
+```bash
+docker-compose up --build
+```
+You'll see test results from the test-runner service in the logs:
 ```bash
 test_runner              | ========================= 4 passed, 1 warning in 1.55s =========================
 ```
-This ensures that the entire microservice stack (FastAPI + PostgreSQL + Redis + Celery) is functioning end-to-end.
 
+---
 
-### Environment Variables
+## Environment Variables
 
 - `.env.example` provides safe default values.
 - Create your own `.env` for local SMTP, Twilio, or other real credentials.
