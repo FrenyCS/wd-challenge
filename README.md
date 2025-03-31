@@ -59,8 +59,10 @@ graph TD
 - Sending logic is decoupled via Notifier interfaces for email/SMS (easily extensible).
 - PostgreSQL stores user preferences and notifications.
 - Celery workers fetch due notifications and dispatch them via the appropriate channel.
-- The `/notifications` endpoint receives the message content and scheduling time directly in the request.
+- The `/notifications` endpoint receives the message content and scheduling time directly in the request. Notifications can be sent immediately or scheduled for a specific time in the future.
+- **Content Handling**: The `/notifications` endpoint accepts raw data for the notification content. This approach simplifies the architecture and avoids querying external systems for content generation.
 - **Integration with External Systems**: This microservice does not pull data from external property management systems or user databases. Instead, it relies on clients (internal systems) to provide all necessary data via API calls. This approach ensures the microservice remains highly decoupled and self-contained.
+- **Authentication**: The service uses API key authentication for simplicity. This ensures that only authorized clients can access the endpoints.
 - **Architectural Quantum**: The microservice has all the resources it needs, including its own database, task queue, and notification logic. This independence aligns with microservice principles, making it easier to scale, maintain, and deploy without dependencies on other systems.
 
 ---
@@ -92,12 +94,12 @@ Handles sending notifications to users.
 ```json
 {
   "user_id": "12345",
-  "send_time": "2025-03-28T14:30:00Z",
+  "send_at": "2025-03-28T14:30:00Z",
   "subject": "Check out new properties you might like!",
-  "body": "Here are some new listings that match your preferences..."
+  "message": "Here are some new listings that match your preferences..."
 }
 ```
-- *send_at*: optional. If omitted, sends immediately.
+- *send_at*: optional. If omitted, sends immediately. If provided, schedules the notification for the specified time.
 - *subject*: required title.
 - *message*: required content.
 
@@ -211,31 +213,37 @@ While the microservice meets the core requirements of the challenge, there are s
 9. **Data Backup and Recovery**:
    - Introduce automated backup procedures for PostgreSQL and Redis data, along with recovery mechanisms to minimize downtime in case of failures.
 
+10. **Retry Mechanisms for Notification Delivery**:
+   - The system currently does not implement retry mechanisms for failed notification deliveries (e.g., email or SMS).
+
+11. **Data Caching for User Preferences**:
+   - User preferences may not expected to change frequently, making them a good candidate for caching. Implementing caching for `GET /preferences/{user_id}` or other requests could improve performance and reduce database load.
+
 ### Security and Abuse Prevention
-10. **Security Enhancements**:
+12. **Security Enhancements**:
     - API key authentication is implemented, but more advanced security measures (e.g., OAuth2, JWT, rate limiting) could be added to enhance protection.
     - Implement role-based access control (RBAC) for fine-grained permissions.
 
-11. **Spam Detection and Fraud Prevention**:
+13. **Spam Detection and Fraud Prevention**:
     - The system currently lacks mechanisms to detect spam or fraudulent activity. Features like rate limiting, content filtering, and behavioral analysis could help prevent abuse.
     - Adding IP address monitoring and reputation scoring for users or API keys would further enhance security.
     - There is no support for managing blacklists of phone numbers, email addresses, or IPs. Introducing global and user-specific blacklists could prevent notifications from being sent to known bad actors or invalid recipients.
 
 ### Monitoring and Observability
-12. **Metrics and Monitoring**:
+14. **Metrics and Monitoring**:
     - The system currently lacks metrics for monitoring and analytics. Adding metrics would provide valuable insights into system performance and usage patterns.
     - The system currently does not have a mechanism to uniquely track requests across components. Adding a UUID for each request would improve traceability, debugging, and monitoring.
 
 ### Development and Maintenance
-13. **Test Coverage**:
+15. **Test Coverage**:
     - Current test coverage is approximately 70%. Additional unit tests should be added to cover more  cases, ensuring the reliability of all components.
 
-14. **Stress and Load Testing**:
+16. **Stress and Load Testing**:
     - The system has not been extensively tested under high load conditions. Performing stress and load tests would help identify bottlenecks and ensure the system can handle production-level traffic.
 
-15. **Task Scheduling with Celery Beat**:
+17. **Task Scheduling with Celery Beat**:
     - Currently, task scheduling is handled manually or via basic mechanisms. Integrating Celery Beat could provide a more robust and flexible solution for managing periodic or recurring tasks, such as sending notifications at specific intervals.
 
-16. **Documentation and API Versioning**:
+18. **Documentation and API Versioning**:
     - While the README provides setup and usage instructions, more detailed developer documentation (e.g., API specs, deployment guides) could be added for better maintainability.
     - Implement API versioning to ensure backward compatibility and allow for seamless updates without breaking existing clients.
