@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.models import UserPreference
 from app.routes.preferences import (
@@ -91,3 +92,63 @@ async def test_create_or_replace_preferences_create_new():
 
     # Ensure DB commit was called
     mock_db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_or_replace_preferences_update_existing():
+    # Mock async DB session
+    mock_db = AsyncMock()
+
+    # Existing preference found
+    existing_preferences = UserPreference(
+        user_id="user123",
+        email="old_email@example.com",
+        phone_number="9876543210",
+        email_enabled=False,
+        sms_enabled=True,
+    )
+    mock_db.execute.return_value.scalar_one_or_none = MagicMock(
+        return_value=existing_preferences
+    )
+
+    # Mock payload
+    payload = {
+        "email_enabled": True,
+        "sms_enabled": False,
+        "email": "new_email@example.com",
+        "phone_number": "1234567890",
+    }
+
+    # Convert payload dict to PreferencesPayload object
+    payload_obj = PreferencesPayload(**payload)
+
+    # Call the function
+    with patch("app.db.get_db", return_value=mock_db):
+        response = await create_or_replace_preferences(
+            user_id="user123", payload=payload_obj, db=mock_db
+        )
+
+    # Assert response
+    assert response.email_enabled == payload["email_enabled"]
+    assert response.sms_enabled == payload["sms_enabled"]
+    assert response.email == payload["email"]
+    assert response.phone_number == payload["phone_number"]
+
+    # Ensure DB commit was called
+    mock_db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_or_replace_preferences_invalid_payload():
+    # Mock invalid payload (missing required fields)
+    payload = {
+        "email_enabled": True,
+        # Missing "sms_enabled", "email", and "phone_number"
+    }
+
+    # Attempt to create PreferencesPayload object and expect validation error
+    with pytest.raises(ValidationError) as exc:
+        PreferencesPayload(**payload)
+
+    # Assert the validation error contains the missing field
+    assert "sms_enabled" in str(exc.value)

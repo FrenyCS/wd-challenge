@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.models import UserPreference
 from app.routes.notifications import NotificationPayload, create_notification
@@ -230,9 +231,6 @@ async def test_create_notification_invalid_payload():
         "user_id": "user123",
         # Missing 'subject' and 'message'
     }
-
-    # Call the function and expect a ValidationError
-    from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
         await create_notification(NotificationPayload(**invalid_payload), db=mock_db)
