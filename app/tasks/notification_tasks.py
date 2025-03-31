@@ -3,6 +3,7 @@ import nest_asyncio
 nest_asyncio.apply()
 
 import asyncio
+import logging
 from datetime import datetime, timezone
 
 from celery import shared_task
@@ -14,18 +15,27 @@ from app.models import Notification, NotificationStatus
 from app.notifiers.email_notifier import EmailNotifier
 from app.notifiers.sms_notifier import SMSNotifier
 
+logger = logging.getLogger(__name__)
+
 
 def mock_send_email(user_id: str, email: str, subject: str, body: str):
-    print(
-        f"[MOCK EMAIL] To: {user_id} | Email: {email} | Subject: {subject} | Body: {body}"
-    )
+    logger.info(
+        "[MOCK EMAIL] To: %s | Email: %s | Subject: %s | Body: %s",
+        user_id,
+        email,
+        subject,
+        body,
+    )  # Replaced f-string with lazy % formatting
     return True
 
 
 def mock_send_sms(user_id: str, phone_number: str, message: str):
-    print(
-        f"[MOCK SMS] To: {user_id} | Phone number: {phone_number} | Message: {message}"
-    )
+    logger.info(
+        "[MOCK SMS] To: %s | Phone number: %s | Message: %s",
+        user_id,
+        phone_number,
+        message,
+    )  # Replaced f-string with lazy % formatting
     return True
 
 
@@ -61,7 +71,9 @@ async def process_notification(
             )
             notification = result.scalar_one_or_none()
             if not notification:
-                print(f"[ERROR] Notification {notification_id} not found")
+                logger.error(
+                    "Notification %s not found", notification_id
+                )  # Replaced f-string with lazy % formatting
                 return
 
             # Use the appropriate Notifier implementation
@@ -81,15 +93,18 @@ async def process_notification(
             notification.status = NotificationStatus.sent
             notification.sent_at = datetime.now(timezone.utc)
             await session.commit()
+            logger.info(
+                "%s notification sent successfully", channel.upper()
+            )  # Replaced f-string with lazy % formatting
         except SQLAlchemyError as e:
-            print(
-                f"[ERROR] Database error while sending {channel.upper()} notification: {e}"
-            )
+            logger.error(
+                "Database error while sending %s notification: %s", channel.upper(), e
+            )  # Replaced f-string with lazy % formatting
             notification.status = NotificationStatus.failed
             await session.commit()
         except Exception as e:  # pylint: disable=broad-exception-caught
-            print(
-                f"[ERROR] Unexpected error while sending {channel.upper()} notification: {e}"
-            )
+            logger.error(
+                "Unexpected error while sending %s notification: %s", channel.upper(), e
+            )  # Replaced f-string with lazy % formatting
             notification.status = NotificationStatus.failed
             await session.commit()

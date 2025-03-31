@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +10,8 @@ from app.db import get_db
 from app.models import UserPreference
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 class PreferencesPayload(BaseModel):
@@ -25,6 +28,9 @@ async def get_preferences(user_id: str, db: AsyncSession = Depends(get_db)):
     )
     preference = result.scalar_one_or_none()
     if not preference:
+        logger.warning(
+            "Preferences not found for user_id: %s", user_id
+        )  # Replaced f-string with lazy % formatting
         raise HTTPException(status_code=404, detail="User preferences not found")
     return PreferencesPayload(
         email_enabled=preference.email_enabled,

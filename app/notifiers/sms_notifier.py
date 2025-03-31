@@ -1,6 +1,9 @@
+import logging
 import re
 
 from app.notifiers.base import Notifier
+
+logger = logging.getLogger(__name__)
 
 
 class SMSNotifier(Notifier):
@@ -13,7 +16,11 @@ class SMSNotifier(Notifier):
         """Mock sending an SMS."""
         if not self.validate_recipient():
             raise ValueError(f"Invalid phone number: {self.recipient}")
-        print(
-            f"[MOCK SMS] To: {self.recipient} (ID: {self.user_id}) | Message: {self.subject} - {self.body}"
+        logger.info(
+            "[MOCK SMS] To: %s (ID: %s) | Message: %s - %s",
+            self.recipient,
+            self.user_id,
+            self.subject,
+            self.body,
         )
         return True

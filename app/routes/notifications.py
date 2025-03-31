@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -11,6 +12,8 @@ from app.models import Notification, NotificationStatus, UserPreference
 from app.tasks.notification_tasks import send_email_task, send_sms_task
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationPayload(BaseModel):
@@ -30,6 +33,9 @@ async def create_notification(
     )
     preferences = result.scalar_one_or_none()
     if not preferences:
+        logger.warning(
+            "User preferences not found for user_id: %s", payload.user_id
+        )
         raise HTTPException(status_code=404, detail="User preferences not found")
 
     now = datetime.now(timezone.utc)
@@ -79,5 +85,9 @@ async def create_notification(
 
         eta = notification.send_at if notification.send_at > now else None
         task.apply_async(kwargs=task_args, eta=eta)
+
+    logger.info(
+        "Notification queued for user_id: %s", payload.user_id
+    )
 
     return {"status": "queued", "send_at": send_at.isoformat()}
