@@ -1,0 +1,63 @@
+services:
+  app:
+    build: .
+    container_name: property_alerts_service
+    command: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.example  # change to .env in production
+    depends_on:
+      - redis
+      - db
+
+  test-runner:
+    build: .
+    container_name: test_runner
+    command: poetry run pytest tests/integration
+    volumes:
+      - .:/app
+    env_file:
+      - .env.example  # change to .env in production
+    depends_on:
+      - db
+      - redis
+      - celery
+
+  celery:
+    build: .
+    container_name: celery_worker
+    command: poetry run celery -A app.celery_worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env.example  # change to .env in production
+    depends_on:
+      - redis
+      - db
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    sysctls:
+      - net.core.somaxconn=1024
+
+  db:
+    image: postgres:15
+    container_name: alerts_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: alerts_user
+      POSTGRES_PASSWORD: alerts_pass
+      POSTGRES_DB: alerts_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
