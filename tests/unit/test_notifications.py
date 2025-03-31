@@ -9,93 +9,62 @@ from app.models import UserPreference
 from app.routes.notifications import NotificationPayload, create_notification
 
 
+@pytest.fixture
+def mock_celery_tasks():
+    """Fixture for mocking Celery tasks."""
+    return {
+        "send_email_task": MagicMock(),
+        "send_sms_task": MagicMock(),
+    }
+
 @pytest.mark.asyncio
-async def test_create_notification():
-    # Mock async DB session ensuring add is an AsyncMock
-    mock_db = AsyncMock()
-    mock_db.add = AsyncMock()
+async def test_create_notification(mock_db, mock_user_preferences, mock_celery_tasks):
+    # Use shared and module-specific fixtures
+    mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
-    # Mock user preferences fetched from DB
-    mock_preferences = UserPreference(
-        user_id="user123",
-        email="user@example.com",
-        phone_number="+1234567890",
-        email_enabled=True,
-        sms_enabled=True,
-    )
-    mock_db.execute.return_value.scalar_one_or_none = MagicMock(
-        return_value=mock_preferences
-    )
+    with patch("app.routes.notifications.send_email_task", mock_celery_tasks["send_email_task"]), \
+         patch("app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]):
+        # Mock datetime
+        mock_now = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        with patch("app.routes.notifications.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_now
 
-    # Mock Celery tasks
-    mock_send_email_task = MagicMock()
-    mock_send_sms_task = MagicMock()
+            # Prepare payload
+            payload = NotificationPayload(
+                user_id="user123",
+                subject="Test Notification",
+                message="This is a test message",
+                send_at=None,  # Immediate send
+            )
 
-    # Mock datetime
-    mock_now = datetime(2025, 1, 1, tzinfo=timezone.utc)
+            # Call the function
+            response = await create_notification(payload, db=mock_db)
 
-    with (
-        patch("app.routes.notifications.send_email_task", mock_send_email_task),
-        patch("app.routes.notifications.send_sms_task", mock_send_sms_task),
-        patch("app.routes.notifications.datetime") as mock_datetime,
-    ):
-        mock_datetime.now.return_value = mock_now
+            # Assert response
+            assert response["status"] == "queued"
+            assert response["send_at"] == mock_now.isoformat()
 
-        # Prepare payload
-        payload = NotificationPayload(
-            user_id="user123",
-            subject="Test Notification",
-            message="This is a test message",
-            send_at=None,  # Immediate send
-        )
+            # Assert DB interactions
+            mock_db.add.assert_called()  # Ensure notifications were added
+            mock_db.commit.assert_called_once()
 
-        # Call the function
-        response = await create_notification(payload, db=mock_db)
-
-        # Assert response
-        assert response["status"] == "queued"
-        assert response["send_at"] == mock_now.isoformat()
-
-        # Assert DB interactions
-        mock_db.add.assert_called()  # Ensure notifications were added
-        mock_db.commit.assert_called_once()
-
-        # Assert Celery tasks were triggered
-        mock_send_email_task.apply_async.assert_called_once()
-        mock_send_sms_task.apply_async.assert_called_once()
+            # Assert Celery tasks were triggered
+            mock_celery_tasks["send_email_task"].apply_async.assert_called_once()
+            mock_celery_tasks["send_sms_task"].apply_async.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_create_scheduled_notification():
-    # Mock async DB session ensuring add is an AsyncMock
-    mock_db = AsyncMock()
-    mock_db.add = AsyncMock()
-
-    # Mock user preferences fetched from DB
-    mock_preferences = UserPreference(
-        user_id="user123",
-        email="user@example.com",
-        phone_number="+1234567890",
-        email_enabled=True,
-        sms_enabled=True,
-    )
-    mock_db.execute.return_value.scalar_one_or_none = MagicMock(
-        return_value=mock_preferences
-    )
-
-    # Mock Celery tasks
-    mock_send_email_task = MagicMock()
-    mock_send_sms_task = MagicMock()
+async def test_create_scheduled_notification(mock_db, mock_user_preferences, mock_celery_tasks):
+    # Use shared and module-specific fixtures
+    mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
     # Mock datetime
     mock_now = datetime(2025, 1, 1, tzinfo=timezone.utc)
     mock_future_time = datetime(2025, 1, 2, tzinfo=timezone.utc)  # Scheduled time
 
-    with (
-        patch("app.routes.notifications.send_email_task", mock_send_email_task),
-        patch("app.routes.notifications.send_sms_task", mock_send_sms_task),
-        patch("app.routes.notifications.datetime") as mock_datetime,
-    ):
+    with patch("app.routes.notifications.send_email_task", mock_celery_tasks["send_email_task"]), \
+         patch("app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]), \
+         patch("app.routes.notifications.datetime") as mock_datetime:
         mock_datetime.now.return_value = mock_now
 
         # Prepare payload
@@ -118,7 +87,7 @@ async def test_create_scheduled_notification():
         mock_db.commit.assert_called_once()
 
         # Assert Celery tasks were triggered with ETA
-        mock_send_email_task.apply_async.assert_called_once_with(
+        mock_celery_tasks["send_email_task"].apply_async.assert_called_once_with(
             kwargs={
                 "user_id": "user123",
                 "subject": "Scheduled Notification",
@@ -128,7 +97,7 @@ async def test_create_scheduled_notification():
             },
             eta=mock_future_time,
         )
-        mock_send_sms_task.apply_async.assert_called_once_with(
+        mock_celery_tasks["send_sms_task"].apply_async.assert_called_once_with(
             kwargs={
                 "user_id": "user123",
                 "subject": "Scheduled Notification",
@@ -141,11 +110,7 @@ async def test_create_scheduled_notification():
 
 
 @pytest.mark.asyncio
-async def test_create_notification_user_preferences_not_found():
-    # Mock async DB session ensuring add is an AsyncMock
-    mock_db = AsyncMock()
-    mock_db.add = AsyncMock()
-
+async def test_create_notification_user_preferences_not_found(mock_db):
     # Simulate no user preferences found in DB
     mock_db.execute.return_value.scalar_one_or_none = MagicMock(return_value=None)
 
@@ -171,31 +136,14 @@ async def test_create_notification_user_preferences_not_found():
 
 
 @pytest.mark.asyncio
-async def test_create_notification_disabled_channels():
-    # Mock async DB session ensuring add is an AsyncMock
-    mock_db = AsyncMock()
-    mock_db.add = AsyncMock()
-
+async def test_create_notification_disabled_channels(mock_db, mock_user_preferences, mock_celery_tasks):
     # Mock user preferences with both channels disabled
-    mock_preferences = UserPreference(
-        user_id="user123",
-        email="user@example.com",
-        phone_number="+1234567890",
-        email_enabled=False,
-        sms_enabled=False,
-    )
-    mock_db.execute.return_value.scalar_one_or_none = MagicMock(
-        return_value=mock_preferences
-    )
+    mock_user_preferences.email_enabled = False
+    mock_user_preferences.sms_enabled = False
+    mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
-    # Mock Celery tasks
-    mock_send_email_task = MagicMock()
-    mock_send_sms_task = MagicMock()
-
-    with (
-        patch("app.routes.notifications.send_email_task", mock_send_email_task),
-        patch("app.routes.notifications.send_sms_task", mock_send_sms_task),
-    ):
+    with patch("app.routes.notifications.send_email_task", mock_celery_tasks["send_email_task"]), \
+         patch("app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]):
         # Prepare payload
         payload = NotificationPayload(
             user_id="user123",
@@ -216,16 +164,12 @@ async def test_create_notification_disabled_channels():
         mock_db.commit.assert_called_once()  # Commit is still called, but no records added
 
         # Ensure no Celery tasks were triggered
-        mock_send_email_task.apply_async.assert_not_called()
-        mock_send_sms_task.apply_async.assert_not_called()
+        mock_celery_tasks["send_email_task"].apply_async.assert_not_called()
+        mock_celery_tasks["send_sms_task"].apply_async.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_create_notification_invalid_payload():
-    # Mock async DB session ensuring add is an AsyncMock
-    mock_db = AsyncMock()
-    mock_db.add = AsyncMock()
-
+async def test_create_notification_invalid_payload(mock_db):
     # Prepare an invalid payload (missing required fields)
     invalid_payload = {
         "user_id": "user123",

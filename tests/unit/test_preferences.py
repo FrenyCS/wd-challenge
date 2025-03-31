@@ -13,32 +13,19 @@ from app.routes.preferences import (
 
 
 @pytest.mark.asyncio
-async def test_get_preferences():
-    # Mock async DB session
-    mock_db = AsyncMock()
-
-    # Mock user preferences fetched from DB
-    mock_preferences = UserPreference(
-        user_id="user123",
-        email="user@example.com",
-        phone_number="1234567890",
-        email_enabled=True,
-        sms_enabled=False,
-    )
-    # Scalar result should directly return the mock_preferences object
-    mock_db.execute.return_value.scalar_one_or_none = MagicMock(
-        return_value=mock_preferences
-    )
+async def test_get_preferences(mock_db, mock_user_preferences):
+    # Use shared fixtures
+    mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
     # Call the function
     with patch("app.db.get_db", return_value=mock_db):
         response = await get_preferences(user_id="user123", db=mock_db)
 
     # Assert response
-    assert response.email_enabled == mock_preferences.email_enabled
-    assert response.sms_enabled == mock_preferences.sms_enabled
-    assert response.email == mock_preferences.email
-    assert response.phone_number == mock_preferences.phone_number
+    assert response.email_enabled == mock_user_preferences.email_enabled
+    assert response.sms_enabled == mock_user_preferences.sms_enabled
+    assert response.email == mock_user_preferences.email
+    assert response.phone_number == mock_user_preferences.phone_number
 
 
 @pytest.mark.asyncio
