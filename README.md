@@ -180,54 +180,62 @@ test_runner              | ========================= 4 passed, 1 warning in 1.55
 
 ## Known Limitations and Areas for Improvement
 
-While the microservice meets the core requirements of the challenge, there are some limitations and potential areas for improvement:
+While the microservice meets the core requirements of the challenge, there are several limitations and potential areas for improvement:
 
+### Notification Delivery and Validation
 1. **Mocked Notification Delivery**: 
    - The email and SMS notification systems are mocked for simplicity. Integration with real-world services like SMTP servers or Twilio would be required for production use.
 
-2. **Error Handling**:
+2. **Phone Number and Email Validation**:
+   - The system does not currently validate phone numbers or email addresses beyond basic format checks. Integrating private services for validation (e.g., phone number validation APIs or email verification services) would ensure data accuracy and compliance with regional formats.
+
+3. **Notification Deduplication**:
+   - The system currently does not have a mechanism to detect and prevent duplicate notifications. Implementing deduplication would ensure that users do not receive the same notification multiple times.
+
+4. **Notification Status Endpoint**:
+   - There is no endpoint for internal systems to fetch the status of notifications (e.g., sent, failed, pending). Adding such an endpoint would improve visibility and allow better integration with other systems.
+
+### System Reliability and Scalability
+5. **Error Handling**:
    - Current error handling is basic and may not cover all edge cases. Adding more robust error handling and logging mechanisms would improve reliability.
 
-3. **Scalability**:
-   - While the architecture supports horizontal scaling, additional testing under high load conditions is needed to ensure performance at scale.
+6. **Race-Condition During Startup**:
+   - Occasionally, a race-condition error occurs during the initial startup of services (e.g., database migrations or dependencies not being ready). Using Alembic for database migrations and implementing retry mechanisms or health checks for dependent services could improve startup reliability.
 
-4. **Security**:
-   - API key authentication is implemented, but more advanced security measures (e.g., OAuth2, rate limiting) could be added to enhance protection.
+7. **Scalability**:
+   - While the architecture supports horizontal scaling, additional testing under high load conditions is needed to ensure performance at scale. Introducing load balancing and container orchestration (e.g., Kubernetes) could further enhance scalability.
 
-5. **User Preferences Validation**:
-   - The system assumes that user preferences provided via the API are valid. Adding validation mechanisms to ensure data integrity would be beneficial.
+8. **Health Checks**:
+   - Implement health check endpoints for critical components like the database, Redis, and Celery workers to ensure system reliability and detect issues early.
 
-6. **Documentation**:
-   - While the README provides setup and usage instructions, more detailed developer documentation (e.g., API specs, deployment guides) could be added for better maintainability.
+9. **Data Backup and Recovery**:
+   - Introduce automated backup procedures for PostgreSQL and Redis data, along with recovery mechanisms to minimize downtime in case of failures.
 
-7. **Task Scheduling with Celery Beat**:
-   - Currently, task scheduling is handled manually or via basic mechanisms. Integrating Celery Beat could provide a more robust and flexible solution for managing periodic or recurring tasks, such as sending notifications at specific intervals.
-
-8. **Test Coverage**:
-   - Current test coverage is approximately 70%. Additional unit tests should be added to cover more edge cases, ensuring the reliability of all components.
-
-9. **Stress and Load Testing**:
-   - The system has not been extensively tested under high load conditions. Performing stress and load tests would help identify bottlenecks and ensure the system can handle production-level traffic.
-
-10. **Phone Number and Email Validation**:
-   - The system does not currently validate phone numbers or email addresses beyond basic format checks. In production environments, integrating private services for validation (e.g., phone number validation APIs or email verification services) would ensure data accuracy and compliance with regional formats.
+### Security and Abuse Prevention
+10. **Security Enhancements**:
+    - API key authentication is implemented, but more advanced security measures (e.g., OAuth2, JWT, rate limiting) could be added to enhance protection.
+    - Implement role-based access control (RBAC) for fine-grained permissions.
 
 11. **Spam Detection and Fraud Prevention**:
-   - The system currently lacks mechanisms to detect spam or fraudulent activity. Implementing features like rate limiting, content filtering, and behavioral analysis could help prevent abuse.
-   - Adding IP address monitoring and reputation scoring for users or API keys would further enhance security.
+    - The system currently lacks mechanisms to detect spam or fraudulent activity. Features like rate limiting, content filtering, and behavioral analysis could help prevent abuse.
+    - Adding IP address monitoring and reputation scoring for users or API keys would further enhance security.
+    - There is no support for managing blacklists of phone numbers, email addresses, or IPs. Introducing global and user-specific blacklists could prevent notifications from being sent to known bad actors or invalid recipients.
 
-12. **Blacklist Management**:
-   - There is no support for managing blacklists of phone numbers, email addresses, or IPs. Introducing global and user-specific blacklists could prevent notifications from being sent to known bad actors or invalid recipients.
+### Monitoring and Observability
+12. **Metrics and Monitoring**:
+    - The system currently lacks metrics for monitoring and analytics. Adding metrics would provide valuable insights into system performance and usage patterns.
+    - The system currently does not have a mechanism to uniquely track requests across components. Adding a UUID for each request would improve traceability, debugging, and monitoring.
 
-13. **Race-Condition During Startup**:
-   - Occasionally, a race-condition error occurs during the initial startup of services (e.g., database migrations or dependencies not being ready). This can cause the system to fail on the first attempt.
-   - **Potential Solution**: Using Alembic for database migrations could help ensure that the database schema is properly initialized before the application starts. Additionally, implementing retry mechanisms or health checks for dependent services (e.g., Redis, PostgreSQL) could improve startup reliability.
+### Development and Maintenance
+13. **Test Coverage**:
+    - Current test coverage is approximately 70%. Additional unit tests should be added to cover more  cases, ensuring the reliability of all components.
 
-14. **Metrics and Monitoring**:
-   - The system currently lacks metrics for monitoring and analytics. Adding metrics would provide valuable insights into system performance and usage patterns. Examples of useful metrics include:
-     - Total notifications sent (email and SMS).
-     - Number of failed notifications.
-     - Scheduled vs. immediate notifications.
-     - Average notification processing time.
-     - API request counts and response times.
-   - **Potential Solution**: Integrate a monitoring tool like Prometheus and expose metrics via an endpoint (e.g., `/metrics`). Use Grafana or similar tools for visualization and alerting.
+14. **Stress and Load Testing**:
+    - The system has not been extensively tested under high load conditions. Performing stress and load tests would help identify bottlenecks and ensure the system can handle production-level traffic.
+
+15. **Task Scheduling with Celery Beat**:
+    - Currently, task scheduling is handled manually or via basic mechanisms. Integrating Celery Beat could provide a more robust and flexible solution for managing periodic or recurring tasks, such as sending notifications at specific intervals.
+
+16. **Documentation and API Versioning**:
+    - While the README provides setup and usage instructions, more detailed developer documentation (e.g., API specs, deployment guides) could be added for better maintainability.
+    - Implement API versioning to ensure backward compatibility and allow for seamless updates without breaking existing clients.
