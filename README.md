@@ -175,3 +175,59 @@ test_runner              | ========================= 4 passed, 1 warning in 1.55
 - `.env.example` provides safe default values.
 - Create your own `.env` for local SMTP, Twilio, or other real credentials.
 - `.env` is gitignored for safety.
+
+---
+
+## Known Limitations and Areas for Improvement
+
+While the microservice meets the core requirements of the challenge, there are some limitations and potential areas for improvement:
+
+1. **Mocked Notification Delivery**: 
+   - The email and SMS notification systems are mocked for simplicity. Integration with real-world services like SMTP servers or Twilio would be required for production use.
+
+2. **Error Handling**:
+   - Current error handling is basic and may not cover all edge cases. Adding more robust error handling and logging mechanisms would improve reliability.
+
+3. **Scalability**:
+   - While the architecture supports horizontal scaling, additional testing under high load conditions is needed to ensure performance at scale.
+
+4. **Security**:
+   - API key authentication is implemented, but more advanced security measures (e.g., OAuth2, rate limiting) could be added to enhance protection.
+
+5. **User Preferences Validation**:
+   - The system assumes that user preferences provided via the API are valid. Adding validation mechanisms to ensure data integrity would be beneficial.
+
+6. **Documentation**:
+   - While the README provides setup and usage instructions, more detailed developer documentation (e.g., API specs, deployment guides) could be added for better maintainability.
+
+7. **Task Scheduling with Celery Beat**:
+   - Currently, task scheduling is handled manually or via basic mechanisms. Integrating Celery Beat could provide a more robust and flexible solution for managing periodic or recurring tasks, such as sending notifications at specific intervals.
+
+8. **Test Coverage**:
+   - Current test coverage is approximately 70%. Additional unit tests should be added to cover more edge cases, ensuring the reliability of all components.
+
+9. **Stress and Load Testing**:
+   - The system has not been extensively tested under high load conditions. Performing stress and load tests would help identify bottlenecks and ensure the system can handle production-level traffic.
+
+10. **Phone Number and Email Validation**:
+   - The system does not currently validate phone numbers or email addresses beyond basic format checks. In production environments, integrating private services for validation (e.g., phone number validation APIs or email verification services) would ensure data accuracy and compliance with regional formats.
+
+11. **Spam Detection and Fraud Prevention**:
+   - The system currently lacks mechanisms to detect spam or fraudulent activity. Implementing features like rate limiting, content filtering, and behavioral analysis could help prevent abuse.
+   - Adding IP address monitoring and reputation scoring for users or API keys would further enhance security.
+
+12. **Blacklist Management**:
+   - There is no support for managing blacklists of phone numbers, email addresses, or IPs. Introducing global and user-specific blacklists could prevent notifications from being sent to known bad actors or invalid recipients.
+
+13. **Race-Condition During Startup**:
+   - Occasionally, a race-condition error occurs during the initial startup of services (e.g., database migrations or dependencies not being ready). This can cause the system to fail on the first attempt.
+   - **Potential Solution**: Using Alembic for database migrations could help ensure that the database schema is properly initialized before the application starts. Additionally, implementing retry mechanisms or health checks for dependent services (e.g., Redis, PostgreSQL) could improve startup reliability.
+
+14. **Metrics and Monitoring**:
+   - The system currently lacks metrics for monitoring and analytics. Adding metrics would provide valuable insights into system performance and usage patterns. Examples of useful metrics include:
+     - Total notifications sent (email and SMS).
+     - Number of failed notifications.
+     - Scheduled vs. immediate notifications.
+     - Average notification processing time.
+     - API request counts and response times.
+   - **Potential Solution**: Integrate a monitoring tool like Prometheus and expose metrics via an endpoint (e.g., `/metrics`). Use Grafana or similar tools for visualization and alerting.
