@@ -1,11 +1,10 @@
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.models import UserPreference
 from app.routes.notifications import NotificationPayload, create_notification
 
 
@@ -17,13 +16,23 @@ def mock_celery_tasks():
         "send_sms_task": MagicMock(),
     }
 
+
 @pytest.mark.asyncio
-async def test_create_notification(mock_db, mock_user_preferences, mock_celery_tasks):
+async def test_create_notification(
+    mock_db, mock_user_preferences, mock_celery_tasks
+):  # pylint: disable=redefined-outer-name
     # Use shared and module-specific fixtures
     mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
-    with patch("app.routes.notifications.send_email_task", mock_celery_tasks["send_email_task"]), \
-         patch("app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]):
+    with (
+        patch(
+            "app.routes.notifications.send_email_task",
+            mock_celery_tasks["send_email_task"],
+        ),
+        patch(
+            "app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]
+        ),
+    ):
         # Mock datetime
         mock_now = datetime(2025, 1, 1, tzinfo=timezone.utc)
         with patch("app.routes.notifications.datetime") as mock_datetime:
@@ -54,7 +63,11 @@ async def test_create_notification(mock_db, mock_user_preferences, mock_celery_t
 
 
 @pytest.mark.asyncio
-async def test_create_scheduled_notification(mock_db, mock_user_preferences, mock_celery_tasks):
+async def test_create_scheduled_notification(
+    mock_db,
+    mock_user_preferences,
+    mock_celery_tasks,  # pylint: disable=redefined-outer-name
+):
     # Use shared and module-specific fixtures
     mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
@@ -62,9 +75,16 @@ async def test_create_scheduled_notification(mock_db, mock_user_preferences, moc
     mock_now = datetime(2025, 1, 1, tzinfo=timezone.utc)
     mock_future_time = datetime(2025, 1, 2, tzinfo=timezone.utc)  # Scheduled time
 
-    with patch("app.routes.notifications.send_email_task", mock_celery_tasks["send_email_task"]), \
-         patch("app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]), \
-         patch("app.routes.notifications.datetime") as mock_datetime:
+    with (
+        patch(
+            "app.routes.notifications.send_email_task",
+            mock_celery_tasks["send_email_task"],
+        ),
+        patch(
+            "app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]
+        ),
+        patch("app.routes.notifications.datetime") as mock_datetime,
+    ):
         mock_datetime.now.return_value = mock_now
 
         # Prepare payload
@@ -136,14 +156,25 @@ async def test_create_notification_user_preferences_not_found(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_create_notification_disabled_channels(mock_db, mock_user_preferences, mock_celery_tasks):
+async def test_create_notification_disabled_channels(
+    mock_db,
+    mock_user_preferences,
+    mock_celery_tasks,  # pylint: disable=redefined-outer-name
+):
     # Mock user preferences with both channels disabled
     mock_user_preferences.email_enabled = False
     mock_user_preferences.sms_enabled = False
     mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
-    with patch("app.routes.notifications.send_email_task", mock_celery_tasks["send_email_task"]), \
-         patch("app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]):
+    with (
+        patch(
+            "app.routes.notifications.send_email_task",
+            mock_celery_tasks["send_email_task"],
+        ),
+        patch(
+            "app.routes.notifications.send_sms_task", mock_celery_tasks["send_sms_task"]
+        ),
+    ):
         # Prepare payload
         payload = NotificationPayload(
             user_id="user123",

@@ -1,10 +1,9 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.models import UserPreference
 from app.routes.preferences import (
     PreferencesPayload,
     create_or_replace_preferences,
@@ -14,7 +13,7 @@ from app.routes.preferences import (
 
 @pytest.mark.asyncio
 async def test_get_preferences(mock_db, mock_user_preferences):
-    # Use shared fixtures
+    # Use shared and module-specific fixtures
     mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
     # Call the function
@@ -29,11 +28,8 @@ async def test_get_preferences(mock_db, mock_user_preferences):
 
 
 @pytest.mark.asyncio
-async def test_get_preferences_not_found():
-    # Mock async DB session
-    mock_db = AsyncMock()
-
-    # No preferences found in DB
+async def test_get_preferences_not_found(mock_db):
+    # Use shared and module-specific fixtures
     mock_db.execute.return_value.scalar_one_or_none = MagicMock(return_value=None)
 
     # Call the function and catch exception
@@ -47,11 +43,8 @@ async def test_get_preferences_not_found():
 
 
 @pytest.mark.asyncio
-async def test_create_or_replace_preferences_create_new():
-    # Mock async DB session
-    mock_db = AsyncMock()
-
-    # No existing preference found
+async def test_create_or_replace_preferences_create_new(mock_db):
+    # Use shared and module-specific fixtures
     mock_db.execute.return_value.scalar_one_or_none = MagicMock(return_value=None)
 
     # Mock payload
@@ -82,21 +75,11 @@ async def test_create_or_replace_preferences_create_new():
 
 
 @pytest.mark.asyncio
-async def test_create_or_replace_preferences_update_existing():
-    # Mock async DB session
-    mock_db = AsyncMock()
-
-    # Existing preference found
-    existing_preferences = UserPreference(
-        user_id="user123",
-        email="old_email@example.com",
-        phone_number="9876543210",
-        email_enabled=False,
-        sms_enabled=True,
-    )
-    mock_db.execute.return_value.scalar_one_or_none = MagicMock(
-        return_value=existing_preferences
-    )
+async def test_create_or_replace_preferences_update_existing(
+    mock_db, mock_user_preferences
+):
+    # Use shared and module-specific fixtures
+    mock_db.execute.return_value.scalar_one_or_none.return_value = mock_user_preferences
 
     # Mock payload
     payload = {

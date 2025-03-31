@@ -1,6 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from app.models import UserPreference
+
 
 @pytest.fixture
 def mock_db():
@@ -10,6 +13,7 @@ def mock_db():
     db.commit = AsyncMock()
     db.execute.return_value.scalar_one_or_none = MagicMock()
     return db
+
 
 @pytest.fixture
 def mock_user_preferences():
