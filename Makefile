@@ -1,5 +1,5 @@
 install:
-	poetry install --no-root
+	poetry lock && poetry install --no-root
 
 format:
 	poetry run isort app tests && \

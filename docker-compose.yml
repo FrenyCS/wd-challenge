@@ -2,7 +2,7 @@ services:
   app:
     build: .
     container_name: property_alerts_service
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/app
     ports:
@@ -16,7 +16,7 @@ services:
   test-runner:
     build: .
     container_name: test_runner
-    command: pytest tests/integration
+    command: poetry run pytest tests/integration
     volumes:
       - .:/app
     env_file:
@@ -29,8 +29,7 @@ services:
   celery:
     build: .
     container_name: celery_worker
-    # working_dir: /app       # 👈 this is crucial
-    command: celery -A app.celery_worker.celery_app worker --loglevel=info
+    command: poetry run celery -A app.celery_worker.celery_app worker --loglevel=info
     volumes:
       - .:/app
     env_file:
