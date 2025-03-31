@@ -126,26 +126,43 @@ Returns current delivery preferences.
 
 ### Running in Codespaces
 
-**1. Start services**
+**1. Initialize the Codespace**
+
+When you create a new codespace, the terminal will display messages about the configuration process. Once the setup is complete, you'll see the following prompt:
+```bash
+Finished configuring codespace. Press any key to exit.
+```
+Press any key to proceed.
+
+**2. Start the Services**
+
+To start all components of the application, run the following command in the terminal:
 ```bash
 docker-compose up --build
 ```
-- FastAPI will run on `http://localhost:8000`.
-- Redis, Postgres, and Celery workers will also start.  
+This will build and launch the necessary services, including FastAPI, Redis, PostgreSQL, and Celery workers.
 
-**Note:** If you encounter any errors, try running the `docker-compose up --build` command again. Occasionally, a race-condition error may occur on the first attempt. This is a known issue that could be addressed in future improvements.
+**NOTE:** If you encounter any errors during the initial startup, such as services failing to connect or failed integration tests, just press `Ctrl+C` to stop the process and run `docker-compose up --build` again. This issue is caused by a race condition during service initialization and is a known limitation that may be addressed in future updates.
 
+- FastAPI will run on port 8000 in the codespace.
+- Redis, PostgreSQL, and Celery workers will also start automatically as part of the `docker-compose` setup. 
 
-**2. Accessing the app**
-If redirected to a Redis port (6379), edit the browser URL to use the 8000 port:
-`https://<your-codespace>-8000.app.github.dev/`.
+**3. Accessing the app**
+
+When the app starts, VS Code will display a pop-up with an "Open in Browser" button. Click this button to open the app in your default browser. 
+
+Alternatively, you can click the "See all forwarded ports" link in the same message to navigate to the Ports tab (located next to the Terminal tab). From there, click the link associated with port 8000.
+
+If you use the "Open in Browser" option, you may need to adjust the port number in the URL to match the format: `https://<your-codespace>-8000.app.github.dev/`.
 
 ### Interactive API Docs
 
 FastAPI automatically generates interactive API docs. Access it via:
 `https://<your-codespace>-8000.app.github.dev/docs`.
 
-**Note:** Click on the "Authorize" button at the top-right corner of the interactive API docs page to add the `x-api-key` value from the `.env.example` file before trying out any endpoint.
+**Note:** Before trying out any endpoint in the interactive API docs, click on the "Authorize" button located at the top-right corner of the page. Enter `your-api-key-here` as the value for the `x-api-key` header to authenticate your requests.
+
+Now you can see the documentation for all endpoints and try them out directly in the interactive API docs. This feature allows you to test the endpoints with real data and verify their behavior without needing a separate client. 
 
 ---
 
@@ -165,10 +182,15 @@ Integration tests are executed automatically when running the system with Docker
 ```bash
 docker-compose up --build
 ```
-You'll see test results from the test-runner service in the logs:
+You'll see test results from the test-runner service in the logs with a final line like:
 ```bash
 test_runner              | ========================= 4 passed, 1 warning in 1.55s =========================
 ```
+To re-run the integration tests, use the following command:
+```bash
+docker-compose run --rm test-runner
+```
+This will execute the tests in the `test-runner` service without restarting the entire setup.
 
 ---
 
