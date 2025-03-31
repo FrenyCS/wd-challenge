@@ -9,7 +9,7 @@ lint:
 	poetry run pylint --disable=R,C -v app/*.py app/**/*.py tests/*.py tests/**/*.py
 
 test:
-	poetry run pytest -vv --cov=app tests/unit/*.py
+	poetry run pytest -vv --cov=app tests/unit/
 
 build:
 	docker build -t deploy-fastapi .

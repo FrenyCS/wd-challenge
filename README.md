@@ -100,6 +100,7 @@ docker-compose up --build
 
 - FastAPI will run on `http://localhost:8000`
 - Redis, Postgres, and Celery workers will also start.
+**Note:** If you encounter any errors, try running the `docker-compose up --build` command again. Occasionally, a race-condition error may occur on the first attempt. This is a known issue that could be addressed in future improvements.
 
 
 **2. Accesing the app**  
