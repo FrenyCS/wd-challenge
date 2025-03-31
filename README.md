@@ -113,6 +113,8 @@ If redirected to a Redis port (6379), just edit the browser URL to use the 8000 
 FastAPI automatically generates interactive API docs, in Codespaces, access it via:
 `https://<your-codespace>-8000.app.github.dev/docs`. This provides a live interface to test and explore all endpoints, including `/notifications` and `/preferences/{user_id}`.
 
+**Note:** Remember to click on the "Authorize" button at the top-right corner of the interactive API docs page to add the `x-api-key` value from the `.env.example` file before trying out any endpoint.
+
 
 ### Testing
 Tests are grouped into two main categories:

@@ -2,6 +2,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.config import settings
 from app.db import Base
 
 DATABASE_URL = "postgresql+asyncpg://alerts_user:alerts_pass@db:5432/alerts_db"
@@ -19,5 +20,7 @@ async def setup_db():
 
 @pytest_asyncio.fixture
 async def async_client():
-    async with AsyncClient(base_url="http://app:8000") as client:
+    async with AsyncClient(
+        base_url="http://app:8000", headers={"x-api-key": settings.api_key}
+    ) as client:
         yield client

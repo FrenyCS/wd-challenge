@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     db_password: str
     db_name: str
 
+    # Security
+    api_key: str
+
     class Config:
         env_file_encoding = "utf-8"
 

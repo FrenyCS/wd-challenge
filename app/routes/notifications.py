@@ -33,9 +33,7 @@ async def create_notification(
     )
     preferences = result.scalar_one_or_none()
     if not preferences:
-        logger.warning(
-            "User preferences not found for user_id: %s", payload.user_id
-        )
+        logger.warning("User preferences not found for user_id: %s", payload.user_id)
         raise HTTPException(status_code=404, detail="User preferences not found")
 
     now = datetime.now(timezone.utc)
@@ -86,8 +84,6 @@ async def create_notification(
         eta = notification.send_at if notification.send_at > now else None
         task.apply_async(kwargs=task_args, eta=eta)
 
-    logger.info(
-        "Notification queued for user_id: %s", payload.user_id
-    )
+    logger.info("Notification queued for user_id: %s", payload.user_id)
 
     return {"status": "queued", "send_at": send_at.isoformat()}
