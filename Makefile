@@ -1,14 +1,20 @@
 install:
-	python -m pip install --upgrade pip &&\
-		pip install -r requirements.txt
+	poetry install --no-root
+
 format:
-	black app tests
+	poetry run isort app tests && \
+	poetry run black app tests
+
 lint:
-	pylint --disable=R,C -v app/*.py app/**/*.py tests/*.py tests/**/*.py
+	poetry run pylint --disable=R,C -v app/*.py app/**/*.py tests/*.py tests/**/*.py
+
 test:
-	#python -m pytest -vv --cov=app tests/*.py
+	poetry run pytest -vv --cov=app tests/unit/*.py
+
 build:
 	docker build -t deploy-fastapi .
+
 run:
 	docker run -p 127.0.0.1:8080:8080 deploy-fastapi
+
 all: install format lint test build run

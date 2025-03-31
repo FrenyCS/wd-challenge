@@ -1,15 +1,17 @@
+from enum import Enum as PyEnum
+
 from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
+    Enum,
+    ForeignKey,
     Integer,
     String,
-    Boolean,
-    DateTime,
-    ForeignKey,
-    Enum,
     Text,
 )
 from sqlalchemy.orm import relationship
-from enum import Enum as PyEnum
+
 from app.db import Base
 
 

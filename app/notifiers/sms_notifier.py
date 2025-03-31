@@ -1,5 +1,6 @@
-from app.notifiers.base import Notifier
 import re
+
+from app.notifiers.base import Notifier
 
 
 class SMSNotifier(Notifier):

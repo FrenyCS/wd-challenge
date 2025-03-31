@@ -1,9 +1,11 @@
-import pytest
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.future import select
-from app.models import Notification, NotificationStatus
 from datetime import datetime, timedelta, timezone
+
+import pytest
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.future import select
+
+from app.models import Notification, NotificationStatus
 
 
 async def wait_for_notification_records(session, user_id, expected_count=2, timeout=3):

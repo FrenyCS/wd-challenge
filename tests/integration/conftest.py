@@ -1,6 +1,7 @@
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine
+
 from app.db import Base
 
 DATABASE_URL = "postgresql+asyncpg://alerts_user:alerts_pass@db:5432/alerts_db"

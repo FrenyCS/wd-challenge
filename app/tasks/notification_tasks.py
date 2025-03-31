@@ -2,11 +2,13 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-from celery import shared_task
-from datetime import datetime, timezone
-from sqlalchemy.future import select
-from sqlalchemy.exc import SQLAlchemyError
 import asyncio
+from datetime import datetime, timezone
+
+from celery import shared_task
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.future import select
+
 from app.db import AsyncSessionLocal
 from app.models import Notification, NotificationStatus
 from app.notifiers.email_notifier import EmailNotifier

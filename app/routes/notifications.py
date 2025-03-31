@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, EmailStr  # pylint: disable=unused-import
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from pydantic import BaseModel, EmailStr  # pylint: disable=unused-import
-from typing import Optional
-from datetime import datetime, timezone
 
 from app.db import get_db
 from app.models import Notification, NotificationStatus, UserPreference

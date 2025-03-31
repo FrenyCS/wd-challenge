@@ -1,12 +1,12 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from app.routes import preferences
-from app.routes import notifications
-from app.utils.logger import setup_logger
+from fastapi import FastAPI
+
 from app.config import settings
 from app.db import engine
 from app.models import Base
+from app.routes import notifications, preferences
+from app.utils.logger import setup_logger
 
 
 @asynccontextmanager

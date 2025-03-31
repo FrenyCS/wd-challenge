@@ -1,9 +1,14 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import HTTPException
-from app.routes.preferences import get_preferences, create_or_replace_preferences
+
 from app.models import UserPreference
-from app.routes.preferences import PreferencesPayload
+from app.routes.preferences import (
+    PreferencesPayload,
+    create_or_replace_preferences,
+    get_preferences,
+)
 
 
 @pytest.mark.asyncio
