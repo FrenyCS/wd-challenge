@@ -2,7 +2,8 @@
 
 ## Microservice for Property Alert Notifications
 
-This is a small Python-based microservice that sends property alert notifications by email and SMS, based on user preferences. It supports scheduling, user preference management, and basic API key authentication.
+A Python microservice for sending property alert notifications via **email** and **SMS**, based on user preferences. Supports immediate and scheduled delivery, user preference management, and basic API key authentication.
+
 
 ### Architectural Approach
 
@@ -10,51 +11,40 @@ The service follows a layered architecture with some ideas from hexagonal archit
 
 ```mermaid
 graph TD
-  subgraph External Callers
-    A[Client App / Internal System]
+  subgraph Client
+    A[User - Internal App]
   end
 
   subgraph Microservice
-    B[FastAPI App]
-    C[Notification Scheduler]
-    D[Relational DB]
-    W[Background Worker]
+    B[FastAPI API]
+    R[Redis Broker]
+    D[PostgreSQL DB]
+    C[Celery Worker]
   end
 
   subgraph External Services
     E1[Email Notifier]
     E2[SMS Notifier]
-    E3[Mocked User API]
-    E4[Mocked Property API]
   end
 
-  %% API Requests
-  A -->|POST /notifications<br>POST, GET /preferences| B
-
-  %% DB Interaction
-  B -->|Store/read notifications or preferences| D
-  C -->|Query due notifications| D
-  C -->|Enqueue notification jobs| W
-  W -->|Read preferences & user data| D
-
-  %% Notification Dispatch
-  W --> E1
-  W --> E2
-
-  %% Optional integrations
-  W --> E3
-  W --> E4
+  A -->|API Calls| B
+  B -->|Enqueue Tasks| R
+  C -->|Consume from Redis| R
+  B -->|Query / Store| D
+  C -->|Query / Update| D
+  C --> E1
+  C --> E2
 ```
 
-- Core logic is separated from frameworks like FastAPI or Celery.
-- Notification sending is handled through a Notifier interface (email and SMS as adapters).
-- External systems like the user database and property listings are mocked.
-
 ### Design Decisions
+- Sending logic is decoupled via Notifier interfaces for email/SMS (easily extensible).
+- PostgreSQL stores user preferences and notifications.
+- Celery workers fetch due notifications and dispatch them via the appropriate channel.
 - The `/notifications` endpoint receives the message content and scheduling time directly in the request.
-- If no `send_time` is included, the notification is sent immediately.
-- User preferences (like preferred channels) are stored and managed via `/preferences/{user_id}`.
 - The service does not fetch property data — this must be provided in the request.
+- If no `send_time` is included, the notification is sent immediately.
+- User Preferences are stored via `/preferences/{user_id}` and include channel opt-ins (email, SMS).
+
 
 ### Authentication
 
@@ -68,60 +58,82 @@ Handles sending notifications to users.
 	POST /notifications
 	x-api-key: your-api-key
 	Content-Type: application/json
-	
-	{
-	  "user_id": "12345",
-	  "send_time": "2025-03-28T14:30:00Z",
-	  "subject": "Check out new properties you might like!",
-	  "body": "Here are some new listings that match your preferences..."
-	}
 
-	- user_id: required
-	- send_time: optional (if missing, send immediately)
-	- subject: optional (not required in SMS, default value for email)
-	- body: required for message content
+```json
+{
+  "user_id": "12345",
+  "send_time": "2025-03-28T14:30:00Z",
+  "subject": "Check out new properties you might like!",
+  "body": "Here are some new listings that match your preferences..."
+}
+```
+
+- *send_at*: optional. If omitted, sends immediately.
+-	*subject*: required for email; ignored for SMS.
+-	*message*: required content.
 
 ### User Preferences API
 
 Manage delivery preferences per user (email and/or SMS).
 
 	GET /preferences/{user_id}
-	Returns user’s current notification settings.
+	Returns current delivery preferences.
 	
 	POST /preferences/{user_id}
-	
-	{
-	  "email_enabled": true,
-	  "sms_enabled": false
-	}
 
-### How to Run in Codespaces
+```json
+{
+  "email_enabled": true,
+  "sms_enabled": false,
+  "email": "user@example.com",
+  "phone_number": "+1234567890"
+}
+``` 
 
-**Step 1. Build and run the app**  
+### Runnin in Codespaces
 
-Run ```docker-compose up --build``` in the terminal, this will:
-- Start the FastAPI service at http://localhost:8000
-- Start Redis (used as a message broker for background tasks)
+**1. Start services**
 
-**Step 2. Port forwarding in Codespaces**  
+```bash
+docker-compose up --build
+``` 
 
-Port 8000 is already auto-forwarded via `.devcontainer/devcontainer.json`, just wait a few seconds (while the application startup is completed) and click “Open in Browser” when prompted.
+- FastAPI will run on `http://localhost:8000`
+- Redis, Postgres, and Celery workers will also start.
 
-**Step 3. Change the application port**
-Codespaces is trying to use the redis port (something we can improve later) so you'll see an error, just *change the port value from 6379 to **8000*** in the openend url which has the pattern 
-`https://<codespace-nickname>-<unique-hash-id>-<port>.app.github.dev/`
+
+**2. Accesing the app**  
+
+If redirected to a Redis port (6379), just edit the browser URL to use the 8000 port:
+`https://<your-codespace>-8000.app.github.dev/`
+
+### Interactive API Docs
+
+FastAPI automatically generates interactive API docs, in Codespaces, access it via:
+`https://<your-codespace>-8000.app.github.dev/docs`. This provides a live interface to test and explore all endpoints, including `/notifications` and `/preferences/{user_id}`.
+
 
 ### Testing
-- Unit tests cover key logic.
-- Mock integration tests simulate sending notifications.
+Tests are grouped into two main categories:
+- `tests/unit/`: fast unit tests for pure business logic, using mocked dependencies.
+- `tests/integration/`: full-stack tests using the real PostgreSQL, Redis, and Celery services.
 
-Instructions for running tests and setup are in the /tests folder.
+**Unit Tests**
+
+Unit tests run automatically on every push via [GitHub Actions](https://github.com/FrenyCS/wd-challenge/actions/workflows/devops.yml), ensuring core logic remains reliable.
+
+**Integration Tests**
+
+Integration (regression) tests are executed automatically when running the system with Docker Compose.
+After running: `docker-compose up --build` you'll see test results from the test-runner service in the logs, for example:
+```bash
+test_runner              | ========================= 4 passed, 1 warning in 1.55s =========================
+```
+This ensures that the entire microservice stack (FastAPI + PostgreSQL + Redis + Celery) is functioning end-to-end.
 
 
 ### Environment Variables
 
-A `.env.example` file is included with mock/stub values that are safe to version and use for testing or evaluation purposes.
-
-If you need to use real credentials (e.g. for local SMTP or Twilio), you can create your own `.env` file in the root of the project. It will automatically be loaded and will override the default values in `.env.example`.
-
-**Note:** The `.env` file is ignored by Git and should not be committed to version control.
+- `.env.example` provides safe default values.
+- Create your own `.env` for local SMTP, Twilio, or other real credentials.
+- `.env` is gitignored for safety.

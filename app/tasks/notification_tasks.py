@@ -9,6 +9,8 @@ from sqlalchemy.exc import SQLAlchemyError
 import asyncio
 from app.db import AsyncSessionLocal
 from app.models import Notification, NotificationStatus
+from app.notifiers.email_notifier import EmailNotifier
+from app.notifiers.sms_notifier import SMSNotifier
 
 
 def mock_send_email(user_id: str, email: str, subject: str, body: str):
@@ -60,15 +62,18 @@ async def process_notification(
                 print(f"[ERROR] Notification {notification_id} not found")
                 return
 
-            # Simulate sending
-            if channel == "email":
-                mock_send_email(
-                    user_id=user_id, email=recipient, subject=subject, body=message
-                )
+            # Use the appropriate Notifier implementation
+            notifier = (
+                EmailNotifier(user_id, recipient, subject, message)
+                if channel == "email"
+                else SMSNotifier(user_id, recipient, subject, message)
+            )
+
+            # Validate and send
+            if notifier.validate_recipient():
+                notifier.send()
             else:
-                # For SMS, we can format the message to include the subject
-                message = f"{subject} - {message}"
-                mock_send_sms(user_id=user_id, phone_number=recipient, message=message)
+                raise ValueError(f"Invalid recipient for {channel.upper()}")
 
             # Update status and sent_at
             notification.status = NotificationStatus.sent
