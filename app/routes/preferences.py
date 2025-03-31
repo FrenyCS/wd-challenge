@@ -30,7 +30,7 @@ async def get_preferences(user_id: str, db: AsyncSession = Depends(get_db)):
     if not preference:
         logger.warning(
             "Preferences not found for user_id: %s", user_id
-        )  # Replaced f-string with lazy % formatting
+        )
         raise HTTPException(status_code=404, detail="User preferences not found")
     return PreferencesPayload(
         email_enabled=preference.email_enabled,

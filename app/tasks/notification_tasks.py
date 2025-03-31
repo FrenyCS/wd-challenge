@@ -25,7 +25,7 @@ def mock_send_email(user_id: str, email: str, subject: str, body: str):
         email,
         subject,
         body,
-    )  # Replaced f-string with lazy % formatting
+    )
     return True
 
 
@@ -35,7 +35,7 @@ def mock_send_sms(user_id: str, phone_number: str, message: str):
         user_id,
         phone_number,
         message,
-    )  # Replaced f-string with lazy % formatting
+    )
     return True
 
 
@@ -73,7 +73,7 @@ async def process_notification(
             if not notification:
                 logger.error(
                     "Notification %s not found", notification_id
-                )  # Replaced f-string with lazy % formatting
+                )
                 return
 
             # Use the appropriate Notifier implementation
@@ -95,16 +95,16 @@ async def process_notification(
             await session.commit()
             logger.info(
                 "%s notification sent successfully", channel.upper()
-            )  # Replaced f-string with lazy % formatting
+            )
         except SQLAlchemyError as e:
             logger.error(
                 "Database error while sending %s notification: %s", channel.upper(), e
-            )  # Replaced f-string with lazy % formatting
+            )
             notification.status = NotificationStatus.failed
             await session.commit()
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(
                 "Unexpected error while sending %s notification: %s", channel.upper(), e
-            )  # Replaced f-string with lazy % formatting
+            )
             notification.status = NotificationStatus.failed
             await session.commit()

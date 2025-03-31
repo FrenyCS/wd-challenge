@@ -32,8 +32,6 @@ async def lifespan(
 
     yield  # allows the app to start serving
 
-    # Shutdown: (optional) do cleanup here if needed
-
 
 app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
@@ -64,7 +62,6 @@ def health_check():
 
 @app.get("/")
 async def root():
-    # replace this with usage instructions
     return {
         "message": "Welcome to this app! Add '/docs' to the end of the URL (e.g., https://your-codespace-8000.app.github.dev/docs) to view the API documentation and learn about its usage."
     }
